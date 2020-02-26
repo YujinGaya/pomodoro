@@ -1,30 +1,46 @@
+use std::thread;
+use std::time::{Duration, Instant};
+
 use console::{style, Term};
 use dialoguer::Confirmation;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::thread;
-use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
+mod config;
 mod notification;
 
-// @TODO: Add tests
+use config::Config;
+
 // @TODO: Turn off mac notification via config
 // @TODO: Show stats even with SIGINT, SIGTERM
-// @TODO: Debug mode via config
 
-#[derive(StructOpt, Debug)]
+#[derive(Debug, StructOpt)]
 #[structopt(name = "pomodoro", about = "A command line pomodoro timer.")]
 enum Opt {
-    // @TODO: Other commands like init, stats
     /// Start pomodoro timer with given task name
-    Do { task: String },
+    Do {
+        task: String,
+
+        #[structopt(flatten)]
+        config: Config,
+    },
 }
 
 fn main() -> std::io::Result<()> {
-    let opt = Opt::from_args();
+    match Opt::from_args() {
+        Opt::Do {
+            task,
+            config: config_opt,
+        } => {
+            let config_path = format!(
+                "{}/{}",
+                dirs::home_dir().unwrap().display(),
+                ".config/pomodoro/config.toml"
+            );
+            let config_file = Config::load(&config_path).unwrap();
 
-    match opt {
-        Opt::Do { task } => {
+            let _ = config_opt | config_file | Default::default();
+
             println!("On task {}\n", style(&task).green().bold());
 
             for i in 0.. {
@@ -74,10 +90,9 @@ enum Event<'a> {
     LongBreak,
 }
 
-// @TODO: read from ~/.config/pomodoro/config.toml
 const DURATION_POMODORO: u64 = 25 * 60;
 const DURATION_SHORT_BREAK: u64 = 5 * 60;
-const DURATION_LONG_BREAK: u64 = 15 * 60;
+const DURATION_LONG_BREAK: u64 = 30 * 60;
 
 impl Event<'_> {
     fn name(&self) -> &str {

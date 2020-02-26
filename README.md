@@ -14,9 +14,9 @@ Current status of this project is MVP. You can now use it as a timer, but not as
 `pomodoro` stores user configurations in `~/.config/pomodoro/config.toml` file.
 
 ```toml
-duration = "PT25M"
-short_break = "PT5M"
-long_break = "PT20M"
+duration = 25
+short_break = 5
+long_break = 20
 repetition = 4
 ```
 
