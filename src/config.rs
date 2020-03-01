@@ -1,7 +1,6 @@
 use std::fs;
 use std::io::Error as IoError;
 use std::ops::BitOr;
-use std::path::Path;
 use std::str::FromStr;
 
 use serde::Deserialize;
@@ -14,23 +13,23 @@ use toml::de::Error as DeError;
 #[derive(Copy, Clone, Debug, Deserialize, StructOpt, PartialEq)]
 pub struct Config {
     #[structopt(short = "p", long = "pomodoro")]
-    duration_pomodoro: Option<u64>,
+    pub duration_pomodoro: Option<u64>,
 
     #[structopt(short = "s", long = "short")]
-    duration_short_break: Option<u64>,
+    pub duration_short_break: Option<u64>,
 
     #[structopt(short = "l", long = "long")]
-    duration_long_break: Option<u64>,
+    pub duration_long_break: Option<u64>,
 
     #[structopt(short = "r", long = "repetition")]
-    repetition: Option<i32>,
+    pub repetition: Option<i32>,
 }
-
 
 #[derive(Debug)]
 pub enum Error {
     Io(IoError),
     De(DeError),
+    NonPositiveError,
 }
 
 impl From<IoError> for Error {
@@ -45,22 +44,40 @@ impl From<DeError> for Error {
     }
 }
 
+const CONFIG_PATH: &str = ".config/pomodoro/config.toml";
 
 impl Config {
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
-        let s = fs::read_to_string(&path)?;
-        Ok(Config::from_str(&s)?)
+    /// Load configuration file
+    pub fn load() -> Result<Self, Error> {
+        let home_dir = dirs::home_dir().unwrap();
+        let config_path = format!("{}/{}", home_dir.display(), CONFIG_PATH);
+        match fs::read_to_string(&config_path) {
+            Ok(s) => Ok(Config::from_str(&s)?),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                Ok(Default::default())
+            },
+            Err(e) => Err(e.into())
+        }
     }
 }
 
 impl FromStr for Config {
-    type Err = DeError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s)
+        let config: Config = toml::from_str(s)?;
+
+        if config.duration_pomodoro.filter(|&d| d <= 0).is_some()
+            || config.duration_short_break.filter(|&d| d <= 0).is_some()
+            || config.duration_long_break.filter(|&d| d <= 0).is_some()
+            || config.repetition.filter(|&d| d <= 0).is_some()
+        {
+            Err(Error::NonPositiveError)
+        } else {
+            Ok(config)
+        }
     }
 }
-
 
 const DEFAULT_DURATION_POMODORO: u64 = 25;
 const DEFAULT_DURATION_SHORT_BREAK: u64 = 5;
@@ -78,7 +95,6 @@ impl Default for Config {
     }
 }
 
-
 impl BitOr for Config {
     type Output = Self;
 
@@ -91,7 +107,6 @@ impl BitOr for Config {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -163,7 +178,14 @@ mod tests {
 
     #[test]
     fn parse_illformed() {
-        let config = Config::from_str(r#"duration: 25"#);
+        let config = Config::from_str(r#"duration_pomodoro: 25"#);
+        assert!(config.is_err());
+    }
+
+    #[test]
+    fn parse_negative() {
+        let config = Config::from_str(r#"duration_pomodoro = -1"#);
+        println!("{:?}", config);
         assert!(config.is_err());
     }
 
