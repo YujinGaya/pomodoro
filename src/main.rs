@@ -33,21 +33,29 @@ fn main() -> std::io::Result<()> {
             let config_file = Config::load().unwrap();
             let config = config_opt | config_file | Default::default();
 
-            let mut event_stream = EventStream::new(config);
+            let pomodoros = EventStream::new(config)
+                .take_while(|event| {
+                    if Event::confirm_start(&event) {
+                        event.run();
+                        event.send_notification();
+                        
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .filter(|event| {
+                    if let Event::Pomodoro(_) = event {
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .count();
 
-            while let Some(event) = event_stream.next() {
-                if !Event::confirm_start(&event) {
-                    break;
-                }
+            let pomodoros = EventStream::message_count_pomodoro(pomodoros);
 
-                event.run();
-
-                event.send_notification();
-            }
-
-            let pomodoros = event_stream.message_count_pomodoro();
-
-            println!("\nYou've done {}.\n", style(&pomodoros).cyan().bold());
+            println!("\nYou've done {}.\n", style(pomodoros).cyan().bold());
         }
     }
 

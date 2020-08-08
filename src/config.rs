@@ -8,6 +8,9 @@ use structopt::StructOpt;
 use toml;
 use toml::de::Error as DeError;
 
+// @TODO: Options is a builder for Config
+// @TODO: BitOr LHS: Options, RHS: Config
+
 /// All durations are in minutes.
 /// Priority is command line argument, configuration file, and then default value.
 #[derive(Copy, Clone, Debug, Deserialize, StructOpt, PartialEq)]

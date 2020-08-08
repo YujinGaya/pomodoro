@@ -10,7 +10,8 @@ Current status of this project is MVP. You can now use it as a timer, but not as
 + 2020-02-21T15:00:32 PT16M28S implement #35
 ```
 
-# Config file
+# Usage
+## Config file
 `pomodoro` stores user configurations in `~/.config/pomodoro/config.toml` file.
 
 ```toml
@@ -25,7 +26,7 @@ repetition = 4
 
 ## Initiate new pomodoro project
 ```sh
-pomodoro init
+$ pomodoro init
 ```
 
 Makes empty `.pomodoro` file
@@ -41,4 +42,11 @@ On task coding
 ## Show stats
 ```sh
 pomodoro stats
+```
+
+# Development
+```sh
+$ cargo run # debug build and run
+$ cargo test # run tests
+$ cargo build # build release binary
 ```

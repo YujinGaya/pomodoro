@@ -32,13 +32,13 @@ impl EventStream {
         }
     }
 
-    pub fn message_count_pomodoro(&self) -> String {
-        if self.count == 0 {
-            "none".to_string()
-        } else if self.count < 3 {
+    pub fn message_count_pomodoro(n: usize) -> String {
+        if n == 0 {
+            "nothing".to_string()
+        } else if n < 3 {
             format!("1 pomodoro")
         } else {
-            format!("{} pomodoros", (self.count + 1) / 2)
+            format!("{} pomodoros", (n + 1) / 2)
         }
     }
 }
